@@ -1,3 +1,27 @@
+
+
+
+
+#include <iostream>
+#include <fstream>
+#include "Program.h"
+
+int main(int argc, char**argv){
+    if(argc>1){
+        std::cout<<"Compiling "<<argv[1]<<"...\n";
+        std::ifstream input(argv[1]);
+        if(!input.is_open()){
+            std::cout<<"File not available!\n";
+        }
+        std::cout<<"Compiling "<<argv[1]<<"...\n";
+        Program program(input);
+    }
+    else{
+        std::cout<<"Add code file name as argument!\n";
+    }
+}
+
+/*
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -514,3 +538,4 @@ else{
 	delete [] data;
 	return 0;
 }
+*/
