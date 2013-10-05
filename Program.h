@@ -11,7 +11,16 @@
 #include <istream>
 #include <vector>
 #include <map>
+class Program;
+class Acronyms;
 #include "Command.h"
+
+class Acronyms{
+    public:
+        std::map<std::string, unsigned short> labels;
+        std::map<std::string, unsigned short> variables;
+        //TODO functions
+};
 
 class Program {
 public:
@@ -20,15 +29,15 @@ public:
     
     std::vector<unsigned short> getByteCode();
     
+    Acronyms acronyms;
+    
 private:
     void readProgram(std::istream& stream);
     void scanForAcronyms();
     void resolveAcronyms();
     
     std::vector<Command> commands;
-    std::map<std::string, unsigned short> labels;
-    std::map<std::string, unsigned short> variables;
-    //TODO functions
+    
 };
 
 #endif	/* PROGRAM_H */
