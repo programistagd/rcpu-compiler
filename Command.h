@@ -9,25 +9,27 @@
 #define	COMMAND_H
 
 #include <string>
+#include <vector>
+class Command;
+#include "Program.h"
 
 class Command {
 public:
-    Command(std::string code);
+    explicit Command(std::string code);
     virtual ~Command();
     
-    std::string _code;
+    std::vector<std::string> _code;
     unsigned short id;
     std::string label;
     std::string acronymA, acronymB;
-    enum AcronymType{
-        Label, Variable //TODO function
-    };
     
     short getSize();
     unsigned short bytes[3];
+    bool lateIdDecisionBasedOffArguments = false;
+    bool isSpecial = false;
     
-private:
-
+protected:
+    bool parseArgument(std::string code, unsigned short& byte, bool& specialCase, Acronyms* acronyms = NULL);
 };
 
 #endif	/* COMMAND_H */
