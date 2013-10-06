@@ -7,17 +7,60 @@
 #include "Program.h"
 
 int main(int argc, char**argv){
+    bool verbose = true;
     if(argc>1){
-        std::cout<<"Compiling "<<argv[1]<<"...\n";
-        std::ifstream input(argv[1]);
-        if(!input.is_open()){
-            std::cout<<"File not available!\n";
+        if(argc>2){
+            if(std::string(argv[2])=="q")
+                verbose=false;
         }
-        std::cout<<"Compiling "<<argv[1]<<"...\n";
-        Program program(input);
+        if(argc>3){
+            if(std::string(argv[3])=="q")
+                verbose=false;
+        }
+        std::string fname = argv[1];
+        if(verbose)std::cout<<"Opening "<<fname<<"...\n";
+        std::string extension=fname.substr(fname.rfind('.')+1);
+        bool highlevel = false;
+        if(extension=="rasm"){
+            highlevel = false;
+        }
+        else if(extension=="rbas"){
+            highlevel = true;
+        }
+        else{
+            if(verbose)std::cout<<"Wrong extension!\n";
+            return -2;
+        }
+        std::ifstream input(fname);
+        if(!input.is_open()){
+            if(verbose)std::cout<<"File not available!\n";
+            return -1;
+        }
+        if(verbose)std::cout<<"Compiling "<<fname<<"...\n";
+        std::vector<unsigned short> bytes;
+        try{
+            Program program(input, highlevel);
+            input.close();
+            bytes = program.getByteCode();
+        }
+        catch(CompilationException e){
+            if(verbose)std::cout<<"Compilation error!\n"<<e.getMessage()<<"\n";
+            return -3;
+        }
+        std::string outname = "out.bin";
+        if(argc>2 and std::string(argv[2])!="q"){
+            outname = argv[2];
+        }
+        if(verbose)std::cout<<"Sources compiled\nSaving to "<<outname<<"\n";
+        std::ofstream out(outname, std::ios::binary|std::ios::out|std::ios::trunc);
+        out.write((char*)bytes.data(), bytes.size()*sizeof(unsigned short));
+        out.flush();
+        out.close();
+        return 0;
     }
     else{
-        std::cout<<"Add code file name as argument!\n";
+        if(verbose)std::cout<<"Usage:\n\trcompiler filename [out filename] [q]\n\n\t\tfilename:\n\t\t\t*.rasm - simple assembler compilation\n\t\t\t*.rbas - higher level compilation (nearly same syntax)\n\t\tq - quiet, don't write info\n";
+        return 1;
     }
 }
 
