@@ -10,6 +10,7 @@
 #include <sstream>
 
 Command::Command(std::string code) {
+    size=0;
     std::vector<std::string> tokens;
     std::stringstream tokenizer(code);
     while (tokenizer.good()){
@@ -18,17 +19,23 @@ Command::Command(std::string code) {
         tokens.push_back(tmp);
     }
     unsigned short cursor = 0;
-    if(tokens.size()==0)
+    if(tokens.size()==0 or tokens[0].length()==0)
         return;
+    if(tokens[0].at(0)=='#')
+        return;//comment
     _code=tokens;
     if(tokens[0].at(0)==':'){
         cursor=1;
         label = tokens[0].substr(1);
     }
     if(tokens.size()==cursor+1){
-        if(tokens[0]=="NOP"){
+        if(tokens[cursor]=="NOP"){
             id=0;
         }
+        else{
+            throw CompilationException("Not known command "+tokens[cursor]+" taking 0 arguments\n");
+        }
+        size=1;
     }
     else
     if(tokens.size()==cursor+2){
@@ -49,12 +56,13 @@ Command::Command(std::string code) {
             id=10;
         }
         else{
-            return;//exception?
+            throw CompilationException("Not known command "+tokens[cursor]+" taking 1 argument\n");
         }
-        bool parsed=parseArgument(tokens[cursor+1],bytes[1], isSpecial);
+        bool parsed=parseArgument(tokens[cursor+1],bytes[1]);
         if(!parsed){
             acronymA=tokens[cursor+1];
         }
+        size=2;
     }
     else
     if(tokens.size()==cursor+3){
@@ -99,19 +107,45 @@ Command::Command(std::string code) {
             id=17;
         }
         else if(tokens[cursor]=="SET"){
-            id=20;
-            bytes[0]=0;
-            lateIdDecisionBasedOffArguments=true;
+            if(tokens[cursor+2].at(0)=='r'){
+                if(tokens[cursor+1].at(0)=='r'){
+                    bytes[0]=20;
+                    id=20;
+                }
+                else if(tokens[cursor+1].at(0)=='$' or (tokens[cursor+1].at(0)=='&' and tokens[cursor+1].at(1)=='$')){
+                    bytes[0]=22;
+                    id=22;
+                }
+                else{
+                    throw CompilationException("Bad parameters to SET instruction\n");
+                }
+            }
+            else if(tokens[cursor+1].at(0)=='r'){
+                if(tokens[cursor+2].at(0)=='$'){
+                    bytes[0]=21;
+                    id=21;
+                }
+                else{
+                    bytes[0]=23;
+                    id=23;
+                }
+            }
+            else{
+                throw CompilationException("Bad parameters to SET instruction\n");
+            }
         }
-        
-        bool parsed=parseArgument(tokens[cursor+1],bytes[1], isSpecial);
+        else{
+            throw CompilationException("Not known command "+tokens[cursor]+" taking 2 arguments\n");
+        }
+        bool parsed=parseArgument(tokens[cursor+1],bytes[1]);
         if(!parsed){
             acronymA=tokens[cursor+1];
         }
-        parsed=parseArgument(tokens[cursor+2],bytes[2], isSpecial);
+        parsed=parseArgument(tokens[cursor+2],bytes[2]);
         if(!parsed){
             acronymB=tokens[cursor+2];
         }
+        size=3;
     }    
 }
 
@@ -125,11 +159,15 @@ inline unsigned short atoi(std::string a){
     return i;
 }
 
-bool Command::parseArgument(std::string code, unsigned short& byte, bool& specialCase, Program::Acronyms* acronyms){
+bool Command::parseArgument(std::string code, unsigned short& byte, Acronyms* acronyms){
     char id=code.at(1);
     switch(id){
         case 'r':
             byte=atoi(code.substr(1));
+            return true;
+            break;
+        case '\'':
+            byte=(unsigned short)code.at(1);
             return true;
             break;
         case '$':
@@ -152,22 +190,9 @@ bool Command::parseArgument(std::string code, unsigned short& byte, bool& specia
             byte=acronyms->labels[code.substr(1)];
             return true;
             break;
-        case '*':
-            if(code.at(2)!='$'){
-                return false;//TODO does it make sense?
-            }
-            if(acronyms==NULL){
-                return false;
-            }
-            if(acronyms->variables.find(code.substr(2))==acronyms->variables.end()){
-                return false;
-            }
-            specialCase = true;
-            byte=acronyms->variables[code.substr(2)];
-            return true;
-            break;
         case '&':
             if(code.at(2)!='$'){
+                throw CompilationException("Unknown construct "+code+", & can only take $variables\n");
                 return false;//TODO does it make sense?
             }
             if(acronyms==NULL){
@@ -185,3 +210,10 @@ bool Command::parseArgument(std::string code, unsigned short& byte, bool& specia
             
     }
 }
+
+unsigned short Command::getSize(){
+    return size;
+}
+
+CompilationException::CompilationException(std::string s):msg(s){}
+std::string CompilationException::getMessage(){return msg;}

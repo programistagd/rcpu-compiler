@@ -13,6 +13,13 @@
 class Command;
 #include "Program.h"
 
+struct CompilationException{
+    std::string getMessage();
+    CompilationException(std::string);
+private:
+    std::string msg;
+};
+
 class Command {
 public:
     explicit Command(std::string code);
@@ -23,13 +30,12 @@ public:
     std::string label;
     std::string acronymA, acronymB;
     
-    short getSize();
+    unsigned short getSize();
     unsigned short bytes[3];
-    bool lateIdDecisionBasedOffArguments = false;
-    bool isSpecial = false;
     
+    bool parseArgument(std::string code, unsigned short& byte, Acronyms* acronyms = NULL);
 protected:
-    bool parseArgument(std::string code, unsigned short& byte, bool& specialCase, Acronyms* acronyms = NULL);
+    unsigned short size;
 };
 
 #endif	/* COMMAND_H */
